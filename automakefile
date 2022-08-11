@@ -1,0 +1,109 @@
+##
+## EPITECH PROJECT, 2021
+## auto
+## File description:
+## makefile
+##
+
+#!/bin/bash
+
+i=0
+h=0
+
+if [ -z $1 ] || [ ! -f $1 ] || [ ! -r $1 ]; then
+  exit 84
+fi
+
+path=$1
+cp $1 tmp
+echo -e "" >> tmp
+path=tmp
+IFS=";"
+unzip_flags='-xvf'
+cc='gcc'
+check=0
+while read line
+do
+  str=($line)
+  if [[ ${str[0]} == "SOURCES_DIR" ]]; then
+    src_dir=${str[1]}
+  elif [[ ${str[0]} == "EXEC" ]]; then
+    binary=${str[1]}
+  elif [[ ${str[0]} == "PROJECT_DIR" ]]; then
+    proj_dir=${str[1]}
+  elif [[ ${str[0]} == "CC" ]]; then
+    cc=${str[1]}
+  elif [[ ${str[0]} == "CFLAGS" ]]; then
+    cflags=${str[1]}
+  elif [[ ${str[0]} == "LDFLAGS" ]]; then
+    ldflags=${str[1]}
+  elif [[ ${str[0]} == "HEADERS_DIR" ]]; then
+    head_dir=${str[1]}
+  elif [[ ${str[0]} == "LIBS_DIR" ]]; then
+    libs_dir=${str[1]}
+  elif [[ ${str[0]} == "BCK_DIR" ]]; then
+    bck_dir=${str[1]}
+  elif [[ ${str[0]} == "UNZIPFLAGS" ]]; then
+    unzip_flags=${str[1]}
+  elif [[ ${str[0]} == "ZIPFLAGS" ]]; then
+    zipflags=${str[1]}
+  elif [[ ${str[0]} == "UNZIP" ]]; then
+    unzip=${str[1]}
+  elif [[ ${str[0]} == "ZIP" ]]; then
+    zip=${str[1]}
+  elif [[ ${str[0]} == *.c ]]
+  then
+    src[i]=${str[0]}
+    ((i++))
+  elif [[ ${str[1]} == *.h ]]
+  then
+    hdr[h]=${str[1]}
+    ((h++))
+  fi
+  ((check++))
+done < "$path"
+
+if (( $check < 2 )); then
+  exit 84
+fi
+n=0
+
+while [[ $n < $i ]]
+do
+  if [[ ! -e $proj_dir/$src_dir/${src[n]} ]]; then
+    exit 84
+  fi
+  ((n++))
+done
+
+n=0
+
+cat /dev/null > $proj_dir/Makefile
+echo >> "$proj_dir/Makefile"
+echo -e "NAME\t=\t$binary\n" >> $proj_dir/Makefile
+while [[ $n < $i ]]
+do
+  if [[ $n == 0 ]]
+  then
+    echo -e "SRC\t=\t$src_dir/${src[n]}\t\\" >> $proj_dir/Makefile
+    ((n++))
+  else
+    echo -e "\t\t$src_dir/${src[n]}\t\\" >> $proj_dir/Makefile
+    ((n++))
+  fi
+done
+echo -e "\nOBJ\t=\t\$(SRC:.c=.o)\n" >> $proj_dir/Makefile
+echo -e "CFLAGS\t=\t$cflags -I $head_dir/\n" >> $proj_dir/Makefile
+echo -e "LDFLAGS\t=\t$ldflags\n" >> $proj_dir/Makefile
+echo -e "all: \t\$(NAME)" >> $proj_dir/Makefile
+if [[ -f $proj_dir/$libs_dir/Makefile ]]; then
+  echo -e "\tmake -C $libs_dir all" >> $proj_dir/Makefile
+fi
+echo -e "\t$cc \$(OBJ) \$(CFLAGS) -o \$(NAME) \$(LDFLAGS)\n" >> $proj_dir/Makefile
+echo -e "clean:\n\trm -f \$(OBJ)\n" >> $proj_dir/Makefile
+echo -e "fclean: clean\n\trm -f \$(NAME)\n" >> $proj_dir/Makefile
+echo -e "re:\tfclean all\n" >> $proj_dir/Makefile
+echo -e "archive:\n\t$zip $zipflags $bck_dir/$bck_dir.$zip.gz \$(SRC)\n">>$proj_dir/Makefile
+echo -e "revert:\n\t$unzip $unzip_flags $bck_dir/$bck_dir.$zip.gz $src_dir">>$proj_dir/Makefile
+echo -e "delete:\n\t rm $bck_dir/$bck_dir.$zip.gz">>$proj_dir/Makefile
+rm tmp
